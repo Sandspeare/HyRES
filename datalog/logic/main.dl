@@ -1,0 +1,241 @@
+#include "types.dl"
+#include "instructions.dl"
+
+.decl store_arg_to_inst(index: number, inst: _instructionid)
+// store (index) arg to inst, done
+store_arg_to_inst(index, instB) :-
+
+is_store_instruction(storeinst),
+get_first_operand(storeinst, OA),
+get_second_operand(storeinst, OB),
+instruction(F, _, storeinst, _, _),
+instruction(F, _, instB, OB, _),
+argument(F, index, OA, _).
+
+.decl mov(instA: _instructionid, instB: _instructionid)
+// mov from inst A to B, e.g. load and store
+// done
+mov(instA, instB) :-
+load_A_to_B(instA, tempA),
+typecast(tempA, tempB),
+store_A_to_B(tempB, instB).
+
+.decl mov_cross_function(instA: _instructionid, instB: _instructionid)
+// load from A -> call -> store to B; done
+mov_cross_function(instA, instB) :-
+is_call_instruction(callinst),          // callinst %1, %2, %3, FB
+get_last_operand(callinst, FB),         // callinst %1, %2, %3, FB
+get_ith_operand(callinst, index, OV),   // callinst %1, %2, %3OV, FB
+store_arg_to_inst(index-1, instB),      // %3 -> instB, store index-1 arg to instB
+instruction(fib, _, instB, _, _),       
+function(fib, FB, _, _),                // FB instB
+load_A_to_B(instA, inst),               // inst = load instA
+typecast(inst, instemp),                // inst = instemp
+instruction(F, _, callinst, _, _),  
+instruction(F, _, instemp, OV, _).      // instemp OV = %3OV
+
+mov_cross_function(retinst, callinst) :-
+is_x_instruction(callinst, "call"),     
+get_last_operand(callinst, callee),
+is_x_instruction(retinst, "ret"), 
+get_ith_operand(retinst, 0, OV),
+function(fid, callee, _, _),
+instruction(fid, _, retinst, OV, _).
+
+
+.decl field_instruction(field: _instructionid, offset: number)
+// getelement x, y, number
+field_instruction(field, offset) :-
+is_getelementptr_instruction(field),     // is getelement instruction
+get_last_operand(field, value),          // get last operand
+anumber(offset),                       
+value = to_string(offset).             
+
+.decl struct_filed_instruction(base: _instructionid, field: _instructionid, offset: number)
+// base = alloca mystruct
+// tempinst = load base
+// inst = bitcast tempinst
+// field = getelementptr, inst, offset
+// done
+struct_filed_instruction(allocainst, field, offset) :-
+is_alloca_instruction(allocainst),
+instype(allocainst, allocatype),
+substr(allocatype, 1, 8) = "mystruct",      // known mystruct        
+// allocainst = alloca mystruct  
+load_A_to_B(allocainst, tempinst),          // tempinst = load allocainst
+typecast(tempinst, inst),
+
+field_instruction(field, offset),
+get_first_operand(field, fieldvalue),          // get first operand
+instruction(F, _, inst, fieldvalue, _),        // field = getelementptr fieldvalue X Y Z
+instruction(F, _, field, _, _),
+instruction(F, _, allocainst, _, _).
+
+.decl field_instruction_type(function: symbol, basetype: symbol, offset: number, finalinst: _instructionid, type: symbol)
+.output field_instruction_type(delimiter=";")
+
+field_instruction_type(function, basetype, offset, tempload, type) :-
+offset = 0,
+is_alloca_instruction(allocainst),
+instype(allocainst, basetype),
+substr(basetype, 1, 8) = "mystruct",  
+!substr(type, 1, 8) = "mystruct",  
+// is mystruct type allocaisnt
+conversion_A_to_B(allocainst, loadedinst),
+instruction(F, _, loadedinst, valueload, _),
+
+is_load_instruction(tempload),          // tempload = load loadedinst(valueload)
+get_last_operand(tempload, valueload),
+instruction(F, _, tempload, _, _),
+instype(tempload, type),          // get final type of tempload
+function(F, function, _, _).
+
+field_instruction_type(function, basetype, offset, tempstore, type) :-
+offset = 0,
+is_alloca_instruction(allocainst),
+instype(allocainst, basetype),
+substr(basetype, 1, 8) = "mystruct",  
+!substr(type, 1, 8) = "mystruct",  
+// is mystruct type allocainst
+typecast(allocainst, dstinst),      
+
+is_store_instruction(tempstore),          // tempstore, store valuesrc valuedst
+get_last_operand(tempstore, valuedst),
+
+instruction(F, _, tempstore, _, _),
+instruction(F, _, dstinst, valuedst, _),
+instype(tempstore, type),
+function(F, function, _, _).
+
+
+field_instruction_type(function, basetype, offset, tempload, type) :-
+struct_filed_instruction(allocainst, field, offset),
+instype(allocainst, basetype),
+
+typecast(field, loadedinst),
+is_load_instruction(tempload),          // tempload = load loadedinst(valueload)
+get_last_operand(tempload, valueload),
+instruction(F, _, tempload, _, _),
+instruction(F, _, loadedinst, valueload, _),
+final_instype(tempload, type),
+function(F, function, _, _).
+
+
+field_instruction_type(function, basetype, offset, tempstore, type) :-
+struct_filed_instruction(allocainst, field, offset),
+instype(allocainst, basetype),
+
+typecast(field, dstinst),
+is_store_instruction(tempstore),          // tempstore, store valuesrc valuedst
+get_last_operand(tempstore, valuedst),
+instruction(F, _, tempstore, _, _),
+instruction(F, _, dstinst, valuedst, _),
+instype(tempstore, type),
+function(F, function, _, _).
+
+
+field_instruction_type(function, basetype, offset, field, type) :-
+struct_filed_instruction(allocainst, field, offset),
+instype(allocainst, basetype),
+!is_loaded_instruction(field),
+!is_stored_instruction(field),
+final_instype(field, type),
+instruction(F, _, field, _, _),
+function(F, function, _, _).
+
+
+.decl type_equal(instA: _instructionid, instB: _instructionid)
+type_equal(instA, instB) :-
+mov(instA, instB).
+
+type_equal(instA, instB) :-
+mov_cross_function(instA, instB).
+
+type_equal(instA, instB) :-
+type_equal(instA, inst),
+type_equal(inst, instB).
+
+type_equal(instA, instB) :-
+typecast(instA, instempA),
+type_equal(instempA, instB).
+
+
+.decl type_equal_output(OA: symbol, FA: symbol, OB: symbol, FB:symbol)
+.output type_equal_output(delimiter=",")
+
+type_equal_output(OA, FA, OB, FB) :-
+instruction(fia, _, instA, OA, _),
+instruction(fib, _, instB, OB, _),
+function(fia, FA, _, _),
+function(fib, FB, _, _),
+is_alloca_instruction(instA),
+is_alloca_instruction(instB),
+type_equal(instA, instB).
+
+type_equal_output(OA, FA, OB, FB) :-
+instruction(fia, _, instA, OA, _),
+instruction(fib, _, instB, OB, _),
+function(fia, FA, _, _),
+function(fib, FB, _, _),
+is_alloca_instruction(instA),
+is_alloca_instruction(instB),
+type_equal(instB, instA).
+
+
+type_equal_output(OA, FA, OB, FB) :-
+instruction(fia, _, instA, OA, _),
+instruction(fib, _, instB, OB, _),
+function(fia, FA, _, _),
+function(fib, FB, _, _),
+is_alloca_instruction(instA),
+is_alloca_instruction(instB),
+type_equal(instA, instempA),
+type_equal(instempA, instB).
+
+.decl base(inst: _instructionid)
+.output base(delimiter=",")
+
+base(instA):-
+instruction(_, _, instA, OA, _), 
+(
+    is_x_instruction(instB, "add");
+    is_x_instruction(instB, "sub")
+),
+operand(instB, _, OA),
+operand(instB, _, ON),
+ON = to_string(offset),
+anumber(offset),
+(
+    type_equal(instB, instC);
+    instC = instB
+),    
+(
+    load_A_to_B(instC, _),
+    store_A_to_B(_, instC)
+).
+
+.decl instack(inst: _instructionid)
+.output instack(delimiter=",")
+instack(inst):-
+    base(inst),
+    is_x_instruction(inst, "alloca").
+
+.decl inglobal(name: symbol)
+.output inglobal(delimiter=",")
+
+inglobal(name):-
+    base(inst),
+    global(name,_,_,_,_),
+    is_x_instruction(inst, "getelemenptr"),
+    operand(inst, 0, name).
+
+
+
+field_instruction_type(function, basetype, offset, field, type) :-
+struct_filed_instruction(allocainst, field, offset),
+instype(allocainst, basetype),
+!is_loaded_instruction(field),
+!is_stored_instruction(field),
+final_instype(field, type),
+instruction(F, _, field, _, _),
+function(F, function, _, _).

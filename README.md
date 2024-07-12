@@ -47,7 +47,7 @@ cd ./pass && make output
 ### Static analysis
 Datalog rules for static structure analysis.
 ```Shell
-python ./stlog/run.py
+python ./datalog/run.py
 ```
 
 ### Semantics

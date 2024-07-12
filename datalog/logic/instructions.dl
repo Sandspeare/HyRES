@@ -1,0 +1,297 @@
+.decl get_first_operand(instructionid: _instructionid, operandvalue: symbol)
+//.output get_first_operand(delimeter=",")
+get_first_operand(IID, VAL) :- 
+operand(IID, OID1, OV1), 
+!operand(IID, OID1-1, _), VAL = OV1.
+
+.decl get_second_operand(instructionid: _instructionid, operandvalue: symbol)
+//.output get_second_operand(delimeter=",")
+get_second_operand(IID, VAL) :- 
+operand(IID, OID1, _), operand(IID, OID2, OV2),
+!operand(IID, OID1-1, _), OID2=OID1+1, VAL = OV2.
+
+.decl get_third_operand(instructionid: _instructionid, operandvalue: symbol)
+//.output get_third_operand(delimeter=",")
+get_third_operand(IID, VAL) :- 
+operand(IID, OID1, _), operand(IID, OID2, _), operand(IID, OID3, OV3),
+!operand(IID, OID1-1, _), OID2=OID1+1, OID3=OID2+1, VAL = OV3.
+
+.decl get_fourth_operand(instructionid: _instructionid, operandvalue: symbol)
+//.output get_fourth_operand(delimeter=",")
+get_fourth_operand(IID, VAL) :- 
+operand(IID, OID1, _), operand(IID, OID2, _), operand(IID, OID3, _), operand(IID, OID4, OV4),
+!operand(IID, OID1-1, _), OID2=OID1+1, OID3=OID2+1, OID4=OID3+1, VAL = OV4.
+
+.decl get_fifth_operand(instructionid: _instructionid, operandvalue: symbol)
+//.output get_fifth_operand(delimeter=",")
+get_fifth_operand(IID, VAL) :- 
+operand(IID, OID1, _), operand(IID, OID2, _), operand(IID, OID3, _), operand(IID, OID4, _), operand(IID, OID5, OV5),
+!operand(IID, OID1-1, _), OID2=OID1+1, OID3=OID2+1, OID4=OID3+1, OID5=OID4+1, VAL = OV5.
+
+//get ith operand
+.decl get_ith_operand(instructionid: _instructionid, i: number, operandvalue: symbol)
+get_ith_operand(IID, I, VAL) :- I=1, get_first_operand(IID, VAL).
+get_ith_operand(IID, I, VAL) :- I=2, get_second_operand(IID, VAL).
+get_ith_operand(IID, I, VAL) :- I=3, get_third_operand(IID, VAL).
+get_ith_operand(IID, I, VAL) :- I=4, get_fourth_operand(IID, VAL).
+get_ith_operand(IID, I, VAL) :- I=5, get_fifth_operand(IID, VAL).
+get_ith_operand(IID, I, VAL) :- I>5, get_ith_operand_recursive(IID, _, I, VAL).
+
+//recursive helper
+.decl get_ith_operand_recursive(instructionid: _instructionid, operandid: _operandid, i: number, operandvalue: symbol)
+get_ith_operand_recursive(IID, OID, I, VAL) :- I=1, operand(IID, OID, VAL), !operand(IID, OID-1, _).
+get_ith_operand_recursive(IID, OID, I, VAL) :- I>1, I=I2+1, operand(IID, OID, VAL), get_ith_operand_recursive(IID, OID-1, I2, _).
+
+//get last operand
+.decl get_last_operand(instructionid: _instructionid, operandvalue: symbol)
+get_last_operand(IID, OV) :- 
+operand(IID, OID, OV), !operand(IID, OID+1, _).
+
+//number of operands
+.decl get_num_operands(instructionid: _instructionid, operandscount: number)
+//.output get_num_operands(delimeter=",")
+get_num_operands(IID, COUNT) :- operand(IID, OID, _), !operand(IID, OID2, _), OID2 = OID-1, 
+get_num_operands_recursive(IID, OID, COUNT).
+
+//recursive
+.decl get_num_operands_recursive(instructionid: _instructionid, operandid: _operandid, operandscount: number)
+get_num_operands_recursive(IID, OID, COUNT) :- operand(IID, OID, _), !operand(IID, OID2, _), 
+OID2 = OID+1, COUNT=1.
+get_num_operands_recursive(IID, OID, COUNT) :- operand(IID, OID, _), operand(IID, OID2, _), 
+OID2 = OID+1, get_num_operands_recursive(IID, OID2, OLDCOUNT), COUNT = OLDCOUNT+1.
+
+
+//instructions
+
+//get last instruction of block
+.decl last_instruction_in_block(blockid: _blockid, instructionid: _instructionid)
+//.output last_instruction_in_block
+last_instruction_in_block(BID, IID) :- 
+instruction(_, BID, IID, _, _),
+IID = max IIDNUM : instruction(_, BID, IIDNUM, _, _)
+.
+
+//get only conversion instruction
+.decl conversion_A_to_B(instA: _instructionid, instB: _instructionid)
+conversion_A_to_B(instA, instB) :-
+is_conversion_instruction(instB),   // instB = bicast instA to i32
+get_first_operand(instB, OV),       //  "instA"
+instruction(F, _, instA, OV, _),    // instAid -> "instA"
+instruction(F, _, instB, _, _).
+
+.decl typecast(instA: _instructionid, instB: _instructionid)
+.output typecast(delimiter=",")
+
+typecast(instA, instB) :-
+is_conversion_instruction(instB),   // instB = bicast instA to i32
+get_first_operand(instB, OV),       //  "instA"
+instruction(F, _, instA, OV, _),    // instAid -> "instA"
+instruction(F, _, instB, _, _).
+
+typecast(instA, instB) :-            // A = C, C = B, A = B
+typecast(instA, instC),
+typecast(instC, instB).
+
+typecast(instA, instB) :-            // A = B, B = A
+typecast(instB, instA).
+
+typecast(instA, instA) :-            // A = B, B = A
+instruction(_, _, instA, _, _).    // instAid -> "instA"
+
+.decl final_instype(inst: _instructionid, type: symbol)
+.output final_instype(delimiter=",")
+
+final_instype(inst, type) :-
+typecast(inst, instA),
+!conversion_A_to_B(instA, _),
+conversion_A_to_B(inst, _),
+instA > inst, 
+instype(instA, type).
+
+final_instype(inst, type) :-
+!conversion_A_to_B(inst, _),
+instype(inst, type).
+
+
+.decl is_conversion_instruction(instructionid: _instructionid)
+is_conversion_instruction(IID) :- instruction(_, _, IID, _, OPC), conversion_instruction(OPC).
+
+.decl conversion_instruction(opcode: symbol)
+conversion_instruction(OPC) :- OPC = "trunc".
+conversion_instruction(OPC) :- OPC = "zext".
+conversion_instruction(OPC) :- OPC = "sext".
+conversion_instruction(OPC) :- OPC = "fptrunc".
+conversion_instruction(OPC) :- OPC = "fpext".
+conversion_instruction(OPC) :- OPC = "fptoui".
+conversion_instruction(OPC) :- OPC = "fptosi".
+conversion_instruction(OPC) :- OPC = "uitofp".
+conversion_instruction(OPC) :- OPC = "sitofp".
+conversion_instruction(OPC) :- OPC = "ptrtoint".
+conversion_instruction(OPC) :- OPC = "inttoptr".
+conversion_instruction(OPC) :- OPC = "bitcast".
+conversion_instruction(OPC) :- OPC = "addrspacecast".
+
+.decl is_x_instruction(instructionid: _instructionid, OPC: symbol)
+is_x_instruction(IID, OPC) :- instruction(_, _, IID, _, OPC).
+
+//get only call instruction
+.decl is_call_instruction(instructionid: _instructionid)
+is_call_instruction(IID) :- instruction(_, _, IID, _, OPC), OPC = "call".
+
+//get only call strncpy instructions
+.decl is_strncpy_call_instruction(instructionid: _instructionid)
+is_strncpy_call_instruction(IID) :- is_call_instruction(IID), get_last_operand(IID, OV), OV = "strncpy".
+
+//get only call strlen instructions
+.decl is_strlen_call_instruction(instructionid: _instructionid)
+is_strlen_call_instruction(IID) :- is_call_instruction(IID), get_last_operand(IID, OV), OV = "strlen".
+
+//get only call sizeof instructions
+.decl is_sizeof_call_instruction(instructionid: _instructionid)
+is_sizeof_call_instruction(IID) :- is_call_instruction(IID), get_last_operand(IID, OV), OV = "sizeof".
+
+//get only call fgets instructions
+.decl is_fgets_call_instruction(instructionid: _instructionid)
+is_fgets_call_instruction(IID) :- is_call_instruction(IID), get_last_operand(IID, OV), OV = "fgets".
+
+//get only call malloc instructions
+.decl is_malloc_call_instruction(instructionid: _instructionid)
+is_malloc_call_instruction(IID) :- is_call_instruction(IID), get_last_operand(IID, OV), OV = "malloc".
+
+//get only call calloc instructions
+.decl is_calloc_call_instruction(instructionid: _instructionid)
+is_calloc_call_instruction(IID) :- is_call_instruction(IID), get_last_operand(IID, OV), OV = "calloc".
+
+//get only call realloc instructions
+.decl is_realloc_call_instruction(instructionid: _instructionid)
+is_realloc_call_instruction(IID) :- is_call_instruction(IID), get_last_operand(IID, OV), OV = "realloc".
+
+//get only call gets instructions
+.decl is_gets_call_instruction(instructionid: _instructionid)
+is_gets_call_instruction(IID) :- is_call_instruction(IID), get_last_operand(IID, OV), OV = "gets".
+
+//get only call gets instructions
+.decl is_read_call_instruction(instructionid: _instructionid)
+is_read_call_instruction(IID) :- is_call_instruction(IID), get_last_operand(IID, OV), OV = "read".
+
+//get only call memcpy instructions
+.decl is_memcpy_call_instruction(instructionid: _instructionid)
+is_memcpy_call_instruction(IID) :- is_call_instruction(IID), get_last_operand(IID, OV), contains("memcpy", OV).
+
+//get only call memmove instructions
+.decl is_memmove_call_instruction(instructionid: _instructionid)
+is_memmove_call_instruction(IID) :- is_call_instruction(IID), get_last_operand(IID, OV), contains("memmove", OV).
+
+//get only call gets instructions
+.decl is_strcpy_call_instruction(instructionid: _instructionid)
+is_strcpy_call_instruction(IID) :- is_call_instruction(IID), get_last_operand(IID, OV), OV = "strcpy".
+
+//get only call wscpy instructions
+.decl is_wscpy_call_instruction(instructionid: _instructionid)
+is_wscpy_call_instruction(IID) :- is_call_instruction(IID), get_last_operand(IID, OV), OV = "wscpy".
+
+
+//get only call atoi family instructions
+.decl is_atoi_family_call_instruction(instructionid: _instructionid)
+is_atoi_family_call_instruction(IID) :- is_call_instruction(IID), get_last_operand(IID, OV), OV = "atoi".
+is_atoi_family_call_instruction(IID) :- is_call_instruction(IID), get_last_operand(IID, OV), OV = "atol".
+is_atoi_family_call_instruction(IID) :- is_call_instruction(IID), get_last_operand(IID, OV), OV = "atoll".
+is_atoi_family_call_instruction(IID) :- is_call_instruction(IID), get_last_operand(IID, OV), OV = "atof".
+
+
+//get only store instruction
+.decl is_alloca_instruction(instructionid: _instructionid)
+is_alloca_instruction(IID) :- instruction(_, _, IID, _, OPC), OPC = "alloca".
+
+//load instructions
+
+//get only load instruction
+.decl is_load_instruction(instructionid: _instructionid)
+is_load_instruction(IID) :- instruction(_, _, IID, _, OPC), OPC = "load".
+
+
+//store instructions
+
+//get only store instruction
+.decl is_store_instruction(instructionid: _instructionid)
+is_store_instruction(IID) :- instruction(_, _, IID, _, OPC), OPC = "store".
+
+//get only getelementptr instruction
+.decl is_getelementptr_instruction(inst: _instructionid)
+is_getelementptr_instruction(inst) :- instruction(_, _, inst, _, OPC), OPC = "getelementptr".
+
+// B = load A
+.decl load_A_to_B(instA: _instructionid, instB: _instructionid)
+load_A_to_B(instA, instB):-
+is_load_instruction(instB),
+get_first_operand(instB, OA),
+instruction(F, _, instA, OA, _),
+instruction(F, _, instB, _, _).
+
+// store A B
+.decl store_A_to_B(instA: _instructionid, instB: _instructionid)
+store_A_to_B(instA, instB):-
+is_store_instruction(inst),
+get_first_operand(inst, OA),
+get_second_operand(inst, OB),
+instruction(F, _, inst, _, _),
+instruction(F, _, instA, OA, _),
+instruction(F, _, instB, OB, _).
+
+
+// .decl store_arg_to_inst_output(index: number, OB: symbol, FB:symbol)
+// .output store_arg_to_inst_output(delimiter=",")
+
+// store_arg_to_inst_output(index, OB, FB) :-
+// instruction(fib, _, instB, OB, _),
+// function(fib, FB, _, _),
+// store_arg_to_inst(index, instB).
+
+.decl is_loaded_instruction(inst: _instructionid)
+is_loaded_instruction(instA) :-
+is_load_instruction(instB),
+instruction(F, _ , instA, OV, _),
+instruction(F, _ , instB, _, _),
+get_last_operand(instB, OV).
+
+is_loaded_instruction(instA) :-
+is_loaded_instruction(instB),
+typecast(instA, instB).
+
+.decl is_stored_instruction(inst: _instructionid)
+is_stored_instruction(instA) :-
+is_store_instruction(instB),
+instruction(F, _, instA, OV, _),
+instruction(F, _, instB, _, _),
+get_last_operand(instB, OV).
+
+is_stored_instruction(instA) :-
+is_stored_instruction(instB),
+typecast(instA, instB).
+
+
+//argument relations
+
+//calculate relative argument id from fid and absolute argument id
+.decl get_relative_argid(functionid: _functionid, argid: _argumentid, argid_relative: number)
+//.output get_relative_argid
+get_relative_argid(FID, ARGID, ARGID_REL) :- 
+argument(FID, ARGID, _, _), 
+ARGID2=ARGID-1, 
+!argument(FID, ARGID2, _, _), 
+ARGID_REL = 1.
+
+get_relative_argid(FID, ARGID, ARGID_REL) :- 
+argument(FID, ARGID, _, _), 
+argument(FID, ARGID2, _, _), 
+ARGID2+1=ARGID, 
+get_relative_argid(FID, ARGID2, ARGID2_REL),
+ARGID_REL = ARGID2_REL+1.
+
+//get number of arguments by fid
+.decl get_num_of_arguments_by_fid(argnum: number, functionid: _functionid)
+get_num_of_arguments_by_fid(NUM, FID) :- NUM = count : {argument(FID, _, _, _)}, function(FID, _, _, _).
+
+//get number of arguments by function name
+.decl get_num_of_arguments_by_fname(argnum: number, functionname: symbol)
+get_num_of_arguments_by_fname(NUM, FNAME) :- NUM = count : {argument(FID, _, _, _)}, function(FID, FNAME, _, _).

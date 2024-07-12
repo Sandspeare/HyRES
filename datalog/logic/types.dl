@@ -1,0 +1,36 @@
+//types
+.type _functionid <: number
+.type _blockid <: number
+.type _argumentid <: number
+.type _instructionid <: number
+.type _operandid <: number
+.type _label <: symbol
+.type _vreg <: symbol
+
+//inputs
+.decl anumber(number: number)
+.input anumber(delimiter=";")
+
+.decl argument(functionid: _functionid, argumentid: _argumentid, vreg: _vreg, argumenttype: symbol)
+.input argument(delimiter=";")
+
+.decl block(functionid: _functionid, blockid: _blockid, label: _label)
+.input block(delimiter=";")
+
+.decl function(functionid: _functionid, functionname: symbol, functiontype: symbol, returntype: symbol)
+.input function(delimiter=";")
+
+.decl global(name: symbol, globaltype: symbol, type: symbol, size: symbol, value: symbol)
+.input global(delimiter=";")
+
+.decl instruction(functionid: _functionid, blockid: _blockid, instructionid: _instructionid, llvmreg: _vreg, opcode: symbol)
+.input instruction(delimiter=";")
+
+.decl instype(instructionid: _instructionid, type: symbol)
+.input instype(delimiter=";")
+
+.decl operand(instructionid: _instructionid, operandid: _operandid, operandvalue: symbol)
+.input operand(delimiter=";")
+
+.decl predecessor(functionid: _functionid, label: _label, predecessor: symbol)
+.input predecessor(delimiter=";")
