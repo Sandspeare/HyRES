@@ -63,7 +63,8 @@ python encode.py
 
 
 ## Data
-Vulnerabilities related to structure in ./binaries.
+
+Vulnerabilities related to structure in ./binaries. The other will be public in google driver after publication due to storage limitation. 
 
 | Vulnerability | Structure Name   | Access Method | Layout    |
 | ------------- | ---------------- | ------------- | --------- |
