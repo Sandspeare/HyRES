@@ -64,7 +64,7 @@ python encode.py
 
 ## Data
 
-Vulnerabilities related to structure in ./binaries. The other will be public in google driver after publication due to storage limitation. 
+Vulnerabilities related to structure in ./binaries. The CVE information as follow.
 
 | Vulnerability | Structure Name   | Access Method | Layout    |
 | ------------- | ---------------- | ------------- | --------- |
@@ -85,6 +85,8 @@ Vulnerabilities related to structure in ./binaries. The other will be public in 
 | CVE-2022-0392 | garray\_T        | stack         | 5 / 5     |
 | CVE-2021-3903 | pos\_T           | indirect      | 3 / 3     |
 | CVE-2022-0359 | cmdline\_info\_T | global        | 6 / 14    |
+
+Test bench present in ./binaries, including coreutils, grep, gzip, lighttpd and wget.
 
 ## Acknowledgement
 
