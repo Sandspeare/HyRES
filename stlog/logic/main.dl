@@ -1,0 +1,132 @@
+//types
+#include "types.dl"
+
+//Constants and Macros
+#define MAXINT 2147483647
+#define MAXDEEP 100
+
+.decl type_size(type: symbol, size: number)
+.output type_size(delimiter=",")
+type_size(type, size) :-
+(
+    type = "bool",
+    size = 1
+);
+(
+    type = "char",
+    size = 1
+);
+(
+    type = "word",
+    size = 2
+);
+(
+    type = "dword",
+    size = 4
+);
+(
+    type = "qword",
+    size = 8
+);
+(
+    type = "float",
+    size = 8
+);
+(
+    type = "funcptr",
+    size = 8
+);
+(
+    type = "structptr",
+    size = 8
+).
+
+// stl
+.decl field_type_positive_point(structA: symbol, structB: symbol, offset: number, point: float)
+.output field_type_positive_point(delimiter=",")
+
+field_type_positive_point(structA, structB, offset, point):-
+structA != structB,
+fieldtype(structA, offset, typeA),
+fieldtype(structB, offset, typeB),
+typeA = typeB, 
+typeA != "qword",
+point = 2.0.
+
+
+field_type_positive_point(structA, structB, offset, point):-
+structA != structB,
+fieldtype(structA, offset, typeA),
+fieldtype(structB, offset, typeB),
+typeA = typeB, 
+offset % 4 != 0,
+typeA = "qword",
+point = 1.0.
+
+.decl field_type_negative_point(structA: symbol, structB: symbol, offset: number, point: float)
+.output field_type_negative_point(delimiter=",")
+
+field_type_negative_point(structA, structB, offsetA, point):-
+structA != structB,
+fieldtype(structA, offsetA, typeA),
+fieldtype(structB, offsetB, typeB),
+type_size(typeA, sizeA),
+type_size(typeB, sizeB),
+(
+    (
+        offsetB > offsetA,
+        offsetB < offsetA + sizeA,
+        offsetB + sizeB > offsetA + sizeA
+    );
+    (
+        offsetB < offsetA,
+        offsetB + sizeB > offsetA,
+        offsetB + sizeB < offsetA + sizeA
+    )
+),
+point = -10.0.
+
+
+.decl field_name_positive_point(structA: symbol, structB: symbol, offset: number, point: float)
+.output field_name_positive_point(delimiter=",")
+
+field_name_positive_point(structA, structB, offset, point):-
+structA != structB,
+similarity(sim, offset, structA, structB, _, _),
+sim >= 85,
+point = 1.
+// point = (sim - 80) / 10.
+
+.decl field_name_negative_point(structA: symbol, structB: symbol, offset: number, point: float)
+.output field_name_negative_point(delimiter=",")
+
+field_name_negative_point(structA, structB, offset, point):-
+structA != structB,
+similarity(sim, offset, structA, structB, m, n),
+substr(m, 1, 3) != "mem",
+substr(n, 1, 3) != "mem",
+sim < 85,
+point = 0.
+
+
+.decl point_between_structs(point: float, structA: symbol, structB: symbol)
+.output point_between_structs(delimiter=",")
+
+point_between_structs(point, structA, structB):-
+fieldtype(structA, _, _),
+fieldtype(structB, _, _),
+structA != structB,
+posA = sum X:{field_type_positive_point(structA, structB, _, X)},
+negA = sum X:{field_type_negative_point(structA, structB, _, X)},
+posB = sum X:{field_name_positive_point(structA, structB, _, X)},
+negB = sum X:{field_name_negative_point(structA, structB, _, X)},
+point = posA + negA + posB + negB,
+point > 0
+.
+
+.decl threshold_between_structs(point: float, structA: symbol)
+.output threshold_between_structs(delimiter=",")
+
+threshold_between_structs(point, structA):-
+fieldtype(structA, _, _),
+point = 2 * mean X:{point_between_structs(X, structA, _)}.

@@ -19,6 +19,7 @@ HyRES is an innovative hybrid reasoning technique that combines static analysis,
 ## News
 
 - [2024/7/10] Paper is ready for review.
+- [2024/7/23] Upload part of example rules for heuristic analysis and an exmaple (program cp)
 
 ## Details
 
@@ -59,6 +60,79 @@ You are a professional reverse engineer, analyze the following C functions: \tex
 We generate GTE-large for text embedding generation.
 ```Shell
 python encode.py
+```
+### Aggregation
+
+The following two structures will be identified as the same type due to similar field. And we can recover more structure information by aggregation. Part of heuristic rules show in ./stlog. 
+```json
+"0x489b_mystruct_1": 
+{
+"mem_0": ["qword", ["device_id"]], 
+"mem_8": ["qword", ["inode_number"]], 
+"mem_16": ["qword", ["hard_links"]], 
+"mem_24": ["qword", ["file_mode", "permissions"]], 
+"mem_32": ["qword", ["user_id"]], 
+"mem_40": ["qword", ["group_id"]], 
+"mem_48": ["qword", ["device_type"]], 
+"mem_56": ["qword", ["file_size"]], 
+"mem_64": ["qword", ["block_size"]], 
+"mem_72": ["qword", ["access_time_sec"]], 
+"mem_80": ["qword", ["access_time_nsec"]], 
+"mem_88": ["qword", ["mod_time_sec"]], 
+"mem_96": ["qword", ["mod_time_nsec"]], 
+"mem_104": ["qword", ["change_time_sec"]], 
+"mem_112": ["qword", ["change_time_nsec"]], 
+"mem_120": ["qword", ["creation_time_sec"]], 
+"mem_128": ["qword", ["creation_time_nsec"]], 
+"mem_136": ["qword", ["file_attributes"]], 
+"mem_144": ["bool", ["is_changed"]], 
+"mem_152": ["qword", ["path_length"]], 
+"mem_160": ["ptr", ["next_node"]]
+}
+```
+
+```json
+"0x5c29_mystruct_1": 
+{
+"mem_0": ["qword", ["unk"]], 
+"mem_4": ["dword", ["unk"]], 
+"mem_8": ["dword", ["unk"]], 
+"mem_12": ["dword", ["unk"]], 
+"mem_16": ["dword", ["unk"]], 
+"mem_20": ["char", ["unk"]], 
+"mem_21": ["char", ["unk"]], 
+"mem_22": ["char", ["unk"]], 
+"mem_23": ["char", ["unk"]], 
+"mem_24": ["char", ["unk"]], 
+"mem_25": ["char", ["unk"]], 
+"mem_26": ["bool", ["is_root_copy"]], 
+"mem_27": ["bool", ["is_root"]], 
+"mem_28": ["char", ["unk"]], 
+"mem_29": ["char", ["unk"]], 
+"mem_30": ["char", ["unk"]], 
+"mem_31": ["char", ["unk"]], 
+"mem_32": ["char", ["unk"]], 
+"mem_33": ["char", ["unk"]], 
+"mem_34": ["char", ["unk"]], 
+"mem_35": ["char", ["unk"]], 
+"mem_36": ["char", ["unk"]], 
+"mem_37": ["char", ["unk"]], 
+"mem_38": ["char", ["unk"]], 
+"mem_39": ["char", ["unk"]], 
+"mem_40": ["char", ["unk"]], 
+"mem_41": ["char", ["unk"]], 
+"mem_42": ["char", ["unk"]], 
+"mem_43": ["char", ["unk"]], 
+"mem_44": ["char", ["unk"]], 
+"mem_45": ["char", ["unk"]], 
+"mem_46": ["char", ["unk"]], 
+"mem_47": ["char", ["unk"]], 
+"mem_48": ["bool", ["posix_flag"]], 
+"mem_52": ["dword", ["invalid_flag"]], 
+"mem_56": ["dword", ["unk"]], 
+"mem_64": ["qword", ["unk"]], 
+"mem_72": ["qword", ["unk"]]
+}
 ```
 
 

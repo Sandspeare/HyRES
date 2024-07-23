@@ -1,0 +1,18 @@
+//types
+.type _functionid <: number
+.type _blockid <: number
+.type _argumentid <: number
+.type _instructionid <: number
+.type _operandid <: number
+.type _structid <: number
+.type _structoperandid <: number
+.type _label <: symbol
+.type _vreg <: symbol
+.type _memcategory <: symbol
+
+//inputs
+.decl fieldtype(struct: symbol, offset: number, type: symbol)
+.input fieldtype(delimiter=";")
+
+.decl similarity(point: float, offset: number, structA: symbol, structB: symbol, nameA: symbol, nameB: symbol)
+.input similarity(delimiter=";")
